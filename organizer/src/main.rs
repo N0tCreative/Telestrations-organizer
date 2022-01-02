@@ -1,6 +1,5 @@
 use std::io;
 
-
 fn main() {
     //block contains user input
     fn input() ->i8{
@@ -23,7 +22,6 @@ fn main() {
     }
     
     generate_all_perms(num_people);
-
 }
 
 //displays the order that the book could be sent in
@@ -49,11 +47,9 @@ fn display_send_order(perm: Vec<Vec<i8>>){
             println!("");
         }
     }
-
-
+    
     display_head(perm.len() as i8);
     display_body(perm);
-
 }
 
 fn generate_all_perms(num_people: i8){
@@ -80,7 +76,7 @@ fn generate_all_perms(num_people: i8){
                 valid_option =is_optimal(perm.to_vec());
                 if valid_option {
 
-                    println!("\n~~~~~~~~~~~~~~OPTIMAL SOLUTION!~~~~~~~~~~~~~~");
+                    println!("\n~~~~~~~~~~~~~~AN OPTIMAL SOLUTION!~~~~~~~~~~~~~~");
                     display_send_order(perm.to_vec());
                 }
                 
