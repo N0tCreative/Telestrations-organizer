@@ -1,5 +1,7 @@
 use std::io;
 
+static mut FOUND_SOLUTIONS:i8 =0;
+
 fn main() {
     //block contains user input
     fn input() ->i8{
@@ -75,9 +77,28 @@ fn generate_all_perms(num_people: i8){
                 //reached a valid case
                 valid_option =is_optimal(perm.to_vec());
                 if valid_option {
-
-                    println!("\n~~~~~~~~~~~~~~AN OPTIMAL SOLUTION!~~~~~~~~~~~~~~");
-                    display_send_order(perm.to_vec());
+                    unsafe {
+                        let middle:i8;
+                        if perm.len() <4 {
+                            middle =0;
+                        } else{
+                            middle =(perm.len()/2) as i8
+                        }
+                        if FOUND_SOLUTIONS == middle {
+                            FOUND_SOLUTIONS+=1;
+                            println!("\n~~~~~~~~~~~~~~AN OPTIMAL SOLUTION!~~~~~~~~~~~~~~");
+                            display_send_order(perm.to_vec());
+                        }
+                        //println!("#of found sol {}, num needed{}", FOUND_SOLUTIONS, (perm.len()/2) as i8);
+                        if FOUND_SOLUTIONS < middle {
+                            FOUND_SOLUTIONS+=1;
+                            valid_option = false;
+                        }
+                        
+                        
+                    }
+                    //print was here but removed
+                    
                 }
                 
             }
