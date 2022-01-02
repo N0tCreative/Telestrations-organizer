@@ -76,13 +76,17 @@ fn generate_all_perms(num_people: i8){
                 valid_option =generate_round(perm, round +1, 0);
 
             } else {
-                display_send_order(perm.to_vec());
                 //reached a valid case
-                valid_option =true;
+                valid_option =is_optimal(perm.to_vec());
+                if valid_option {
+
+                    println!("\n~~~~~~~~~~~~~~OPTIMAL SOLUTION!~~~~~~~~~~~~~~");
+                    display_send_order(perm.to_vec());
+                }
+                
             }
             return valid_option;
         }
-        //TODO make sure this part works
         
         //test every possible book option for this person given the previous choices in the round
         for book  in 0..perm.len() as i8 {
@@ -110,20 +114,59 @@ fn generate_all_perms(num_people: i8){
                 perm[round as usize] [person as usize] = book;
 
                 valid_option =generate_round(perm, round, person +1);
+                //if this solution is optimal then ignore all subsiquent options
                 if valid_option {
-                    //break;
+                    break;
                 }
             }
         }
 
         return valid_option;
     }
+
+    fn is_optimal (perm: Vec<Vec<i8>>)->bool {
+        let mut optimal = true;
+        let mut sent_to = vec![vec![0u8;perm.len()];perm.len()];
+        //for each round except the last round
+        for i in 0..(perm.len()-1) as i8 {
+            //for each book in that round
+            for j in 0..perm.len() as i8 {
+                let mut sender:i8 =0;
+                let mut reciever:i8 =0;
+                //find the person with that book
+                while sender <perm.len() as i8 {
+                    if perm[i as usize][sender as usize] ==j {
+                        break;
+                    }
+                    sender+=1;
+                }
+                //find the person with that book in the next round
+                while reciever <perm.len() as i8 {
+                    if perm[(i+1) as usize][reciever as usize] ==j {
+                        break;
+                    }
+                    reciever+=1;
+                }
+                if sent_to[sender as usize][reciever as usize] ==1 {
+                    optimal = false;
+                    return optimal;
+                } else {
+                    sent_to[sender as usize][reciever as usize] =1;
+                }
+                
+            }
+        }
+        return optimal;
+    }
     
     //each row is a round and each column is a person, each number is the book number
     let mut perm = vec![vec![-1i8;num_people as usize]; num_people as usize];
     generate_first_perm(&mut perm);
     //println!("prior to generate round\n{:?}", perm);
-    generate_round(&mut perm, 1, 0);
+    let sol_exists:bool =generate_round(&mut perm, 1, 0);
+    if !sol_exists {
+        println!("No optimal solution exists for this number of people");
+    }
 
 
 
