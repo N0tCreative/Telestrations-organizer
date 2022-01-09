@@ -44,7 +44,7 @@ fn display_send_order(perm: Vec<Vec<i8>>){
             print!("Round {}\t", round_num);
             round_num +=1;
             for person in round {
-                print!("{}\t\t", person); //print the book that each person should have at this round
+                print!("    {}\t\t", person); //print the book that each person should have at this round
             }
             //println!("]");
             println!("");
@@ -68,7 +68,7 @@ fn generate_all_perms(num_people: i8){
 
     //assigns each person a book in a loop then recursively goes through each person then once its finished generating the round it recursively generates the next round
     //this is very inefficient but i dont think there is another way to do this
-    fn generate_round (perm: &mut Vec<Vec<i8>>, round: i8, person: i8, lock:Arc<Mutex<i8>>)->bool {
+    fn generate_round (perm: &mut Vec<Vec<i8>>, round: i8, person: i8, lock:&Arc<Mutex<i8>>)->bool {
         let mut valid_option =false;
         //if you generate a valid round try to generate the next one
         if person >= perm.len() as i8{
@@ -115,9 +115,8 @@ fn generate_all_perms(num_people: i8){
                 //println!("valid");
                 perm[round as usize] [person as usize] = book;
 
-                //Arcs cant be passed mutably so for each recursion it needs to be cloned
-                let lock = Arc::clone(&lock);
-                valid_option =generate_round(perm, round, person +1, lock);
+                //Arcs cant be passed mutably so for each recursion it needs to be passed by reference
+                valid_option =generate_round(perm, round, person +1, &lock);
                 //if this solution is optimal then ignore all subsiquent options
                 if valid_option {
                     break;
@@ -138,9 +137,8 @@ fn generate_all_perms(num_people: i8){
         
             //println!("valid");
             perm[1] [0] = book;
-            //Arcs cant be passed mutably so for each recursion it needs to be cloned
-            let lock = Arc::clone(&lock);
-            valid_option =generate_round(perm, 1, 1, lock);
+            //Arcs cant be passed mutably so for each recursion it needs to be passed by reference
+            valid_option =generate_round(perm, 1, 1, &lock);
             //if this solution is optimal then ignore all subsiquent options
             if valid_option {
                 break;
