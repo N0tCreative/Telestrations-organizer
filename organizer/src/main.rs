@@ -1,4 +1,6 @@
 use std::io;
+use std::thread;
+use std::sync::{Arc, Mutex};
 
 fn main() {
     //block contains user input
@@ -47,7 +49,6 @@ fn display_send_order(perm: Vec<Vec<i8>>){
             println!("");
         }
     }
-    
     display_head(perm.len() as i8);
     display_body(perm);
 }
@@ -62,20 +63,20 @@ fn generate_all_perms(num_people: i8){
         }
     }
 
-    fn generate_round (perm: &mut Vec<Vec<i8>>, round: i8, person: i8)->bool {
+    fn generate_round (perm: &mut Vec<Vec<i8>>, round: i8, person: i8, lock:Arc<Mutex<i8>>)->bool {
         let mut valid_option =false;
         //if you generate a valid round try to generate the next one
         if person >= perm.len() as i8{
             //println!("got to the end of round {}", round);
             //if all rounds are generated then return
             if round < (perm.len()-1) as i8 {
-                valid_option =generate_round(perm, round +1, 0);
+                valid_option =generate_round(perm, round +1, 0, lock);
 
             } else {
                 //reached a valid case
                 valid_option =is_optimal(perm.to_vec());
                 if valid_option {
-
+                    let _l =lock.lock().unwrap();
                     println!("\n~~~~~~~~~~~~~~AN OPTIMAL SOLUTION!~~~~~~~~~~~~~~");
                     display_send_order(perm.to_vec());
                 }
@@ -109,11 +110,34 @@ fn generate_all_perms(num_people: i8){
                 //println!("valid");
                 perm[round as usize] [person as usize] = book;
 
-                valid_option =generate_round(perm, round, person +1);
+                //Arcs cant be passed mutably so for each recursion it needs to be cloned
+                let lock = Arc::clone(&lock);
+                valid_option =generate_round(perm, round, person +1, lock);
                 //if this solution is optimal then ignore all subsiquent options
                 if valid_option {
                     break;
                 }
+            }
+        }
+
+        return valid_option;
+    }
+
+    fn generate_first_round (perm: &mut Vec<Vec<i8>>, start_book: i8, end_book:i8, lock:Arc<Mutex<i8>>)->bool {
+        let mut valid_option =false;
+        println!("start{} end{}",start_book, end_book);
+        //test every possible book option for this person given the previous choices in the round
+        for book  in start_book..end_book {
+            //println!("testing {:?} with person{} having book{}", perm[round as usize], person, book);
+        
+            //println!("valid");
+            perm[1] [0] = book;
+            //Arcs cant be passed mutably so for each recursion it needs to be cloned
+            let lock = Arc::clone(&lock);
+            valid_option =generate_round(perm, 1, 1, lock);
+            //if this solution is optimal then ignore all subsiquent options
+            if valid_option {
+                break;
             }
         }
 
@@ -155,15 +179,67 @@ fn generate_all_perms(num_people: i8){
         return optimal;
     }
     
+    //i should make this a 2d vector so that this could be looped but im not sure if the borrow checker 
+    //will allow multiple threads to access different parts of the same vector at the same time and this is just a proof of concept
+
     //each row is a round and each column is a person, each number is the book number
-    let mut perm = vec![vec![-1i8;num_people as usize]; num_people as usize];
-    generate_first_perm(&mut perm);
+    let num_threads =4;
+    let mut perm1 = vec![vec![-1i8;num_people as usize]; num_people as usize];
+    let mut perm2 = vec![vec![-1i8;num_people as usize]; num_people as usize];
+    let mut perm3 = vec![vec![-1i8;num_people as usize]; num_people as usize];
+    let mut perm4 = vec![vec![-1i8;num_people as usize]; num_people as usize];
+    //minimum number of books per thread is the number of books left to choose (0 has already been chosen) divided by the number of threads (4)
+    let min_books_per_thread = (num_people -1) / num_threads;
+    //if number of books left is not evenly divis by number of threads then spread out the remainder to as many threads as possible
+    let mut remainder = (num_people-1) % num_threads;
+    let mut start =1;
+    let mut end;
+    let lock1 = Arc::new(Mutex::new(0));
+    let lock2 = Arc::clone(&lock1);
+    let lock3 = Arc::clone(&lock1);
+    let lock4 = Arc::clone(&lock1);
+
+
+    generate_first_perm(&mut perm1);
+    generate_first_perm(&mut perm2);
+    generate_first_perm(&mut perm3);
+    generate_first_perm(&mut perm4);
     //println!("prior to generate round\n{:?}", perm);
-    let sol_exists:bool =generate_round(&mut perm, 1, 0);
-    if !sol_exists {
-        println!("No optimal solution exists for this number of people");
+    //first thread
+    if remainder > 0{
+        end = start + min_books_per_thread +1;
+        remainder -=1;
+    } else {
+        end = start + min_books_per_thread;
     }
+    let handle1 = thread::spawn(move || generate_first_round(&mut perm1, start, end, lock1));
 
+    //sencond thread
+    start = end;
+    if remainder > 0{
+        end = start + min_books_per_thread +1;
+        remainder -=1;
+    } else {
+        end = start + min_books_per_thread;
+    }
+    let handle2 = thread::spawn(move || generate_first_round(&mut perm2, start, end, lock2));
 
+    //third thread
+    start = end;
+    if remainder > 0{
+        end = start + min_books_per_thread +1;
+    } else {
+        end = start + min_books_per_thread;
+    }
+    let handle3 = thread::spawn(move || generate_first_round(&mut perm3, start, end, lock3));
 
+    //fourth thread (no need to check for a remainder because if there still was one then it would be divisiable by the number of threads so there wouldnt be one in the first place)
+    start = end;
+    end = start + min_books_per_thread;
+    let handle4 = thread::spawn(move || generate_first_round(&mut perm4, start, end, lock4));
+
+    handle1.join().unwrap();
+    handle2.join().unwrap();
+    handle3.join().unwrap();
+    handle4.join().unwrap();
 }
