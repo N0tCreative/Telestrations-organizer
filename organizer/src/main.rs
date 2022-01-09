@@ -23,6 +23,7 @@ fn main() {
         return;
     }
     
+    //tests all permutations of the book, people, and round combination to find an optimal solution (either many or none exist, in testing if number is odd no optimal solution exists)
     generate_all_perms(num_people);
 }
 
@@ -53,6 +54,8 @@ fn display_send_order(perm: Vec<Vec<i8>>){
     display_body(perm);
 }
 
+//using multithreading it generates all possible games that could be made with num_people (no person gets the same book twice and each book appears once per round)
+//if a solution is found that involves each person not sending a book to the same person twice it is displayed and ends that thread (this is considered an optimal solution)
 fn generate_all_perms(num_people: i8){
     //first round always starts with person x starting with book x (as that is what defines what the book number is)
     fn generate_first_perm (perm: &mut Vec<Vec<i8>>){
@@ -63,6 +66,8 @@ fn generate_all_perms(num_people: i8){
         }
     }
 
+    //assigns each person a book in a loop then recursively goes through each person then once its finished generating the round it recursively generates the next round
+    //this is very inefficient but i dont think there is another way to do this
     fn generate_round (perm: &mut Vec<Vec<i8>>, round: i8, person: i8, lock:Arc<Mutex<i8>>)->bool {
         let mut valid_option =false;
         //if you generate a valid round try to generate the next one
@@ -123,6 +128,7 @@ fn generate_all_perms(num_people: i8){
         return valid_option;
     }
 
+    //sets the book to start and end on (basically generate_round but evenly divides the work for multithreading)
     fn generate_first_round (perm: &mut Vec<Vec<i8>>, start_book: i8, end_book:i8, lock:Arc<Mutex<i8>>)->bool {
         let mut valid_option =false;
         println!("start{} end{}",start_book, end_book);
@@ -144,6 +150,7 @@ fn generate_all_perms(num_people: i8){
         return valid_option;
     }
 
+    //checks if the solution generated involves sending to a different person each round
     fn is_optimal (perm: Vec<Vec<i8>>)->bool {
         let mut optimal = true;
         let mut sent_to = vec![vec![0u8;perm.len()];perm.len()];
@@ -200,11 +207,11 @@ fn generate_all_perms(num_people: i8){
     let lock4 = Arc::clone(&lock1);
 
 
+    //set all initial values for what book each person starts with
     generate_first_perm(&mut perm1);
     generate_first_perm(&mut perm2);
     generate_first_perm(&mut perm3);
     generate_first_perm(&mut perm4);
-    //println!("prior to generate round\n{:?}", perm);
     //first thread
     if remainder > 0{
         end = start + min_books_per_thread +1;
@@ -238,6 +245,7 @@ fn generate_all_perms(num_people: i8){
     end = start + min_books_per_thread;
     let handle4 = thread::spawn(move || generate_first_round(&mut perm4, start, end, lock4));
 
+    //wait for all threads to end then ends the main thread
     handle1.join().unwrap();
     handle2.join().unwrap();
     handle3.join().unwrap();
