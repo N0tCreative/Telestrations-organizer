@@ -131,7 +131,7 @@ fn generate_all_perms(num_people: i8){
     //sets the book to start and end on (basically generate_round but evenly divides the work for multithreading)
     fn generate_first_round (perm: &mut Vec<Vec<i8>>, start_book: i8, end_book:i8, lock:Arc<Mutex<i8>>)->bool {
         let mut valid_option =false;
-        println!("start{} end{}",start_book, end_book);
+        //println!("start{} end{}",start_book, end_book);
         //test every possible book option for this person given the previous choices in the round
         for book  in start_book..end_book {
             //println!("testing {:?} with person{} having book{}", perm[round as usize], person, book);
