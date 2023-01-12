@@ -10,5 +10,4 @@ then (2)checks that the permutations dont move any numbers from one position to 
 (ie the number in position 1 in round 1 is in position 2 in round 2 and the number in position 1 in round 3 is in position 2 in round 4)
 
 this algorithm is very inefficiently designed and to make it faster adherence to the 2nd criteria should be checked while the permutations are being created instead of after, there are unnecessary loops for checking if a book has been used this round, and using permutations makes this O(!n) and not usable for more than 7 people if the number of people is odd. even results are often found rather quickly.
-(ie if there are 6 total rounds then you could swap round 3 and 4 or you could swap round 2 and 5)
 note that as far as i can tell there are no solutions for both criteria with an odd number of players
